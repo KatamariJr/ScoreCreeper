@@ -159,6 +159,7 @@ func logScore(name string, score int, uuid string) error {
 	var err error
 
 	scoresLock.Lock()
+	defer scoresLock.Unlock()
 	f, err = os.OpenFile("scores.csv", os.O_RDWR|os.O_APPEND, 0660)
 	if err != nil {
 		return err
@@ -178,7 +179,7 @@ func logScore(name string, score int, uuid string) error {
 		return err
 	}
 	w.Flush()
-	scoresLock.Unlock()
+
 	err = w.Error()
 	if err != nil {
 		return err
