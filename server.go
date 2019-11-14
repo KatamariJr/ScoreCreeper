@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
 	"github.com/wangjia184/sortedset"
 )
 
@@ -41,6 +42,7 @@ type UnrankedResult struct {
 }
 
 func main() {
+	setViperConfig()
 	router := mux.NewRouter() //.StrictSlash(true)
 	router.HandleFunc("/", handler).Methods("POST")
 	router.HandleFunc("/", getRouter).Methods("GET")
@@ -58,6 +60,8 @@ func main() {
 			panic(err)
 		}
 	}()
+
+	fmt.Println(viper.GetBool("https"))
 
 	log.Fatal(http.ListenAndServe(":4000", router))
 }
