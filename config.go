@@ -25,7 +25,7 @@ func setViperConfig() {
 	//viper.SetDefault("game_name", "")
 
 	//make the HTML webview the default output on a GET request
-	viper.SetDefault("web_view", true)
+	viper.SetDefault("webview", true)
 
 	//filter profane names
 	viper.SetDefault("name_filter", false)

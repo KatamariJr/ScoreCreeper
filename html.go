@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -61,12 +62,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 // route the incoming call to a json view or webview based on query param.
 func getRouter(w http.ResponseWriter, r *http.Request) {
-	qp := r.URL.Query()
-	if webview, _ := strconv.ParseBool(qp.Get("webview")); webview {
+	if shouldShowWebView(r) {
 		printScoreTable(w, r)
 	} else {
 		fetchAll(w, r)
 	}
+}
+
+// return whatever the query params is set to or the value set in config
+func shouldShowWebView(r *http.Request) bool {
+	qp := r.URL.Query()
+	if _, ok := qp["webview"]; ok {
+		val, _ := strconv.ParseBool(qp.Get("webview"))
+		return val
+	}
+
+	return viper.GetBool("webview")
 }
 
 // show an html view of the scores
