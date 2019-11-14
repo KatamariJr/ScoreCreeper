@@ -22,10 +22,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("correlation=%s date=%s msg=Incoming score=%s name=%s checksum=%s\n", requestUUID, time.Now().String(), score, name, checksum)
 
+	maxLength := viper.GetInt("max_name_length")
+	if maxLength > 0 {
+		if len(name) > maxLength {
+			name = name[:maxLength]
+			fmt.Printf("correlation=%s msg=name truncated\n", requestUUID)
+			return
+		}
+	}
+
 	err := validateChecksum(score, name, checksum)
 	if err != nil {
 		http.Error(w, "Nope", http.StatusTeapot)
-		fmt.Printf("correlation=%s msg=checksum-invalid:%s\n", requestUUID, err.Error())
+		fmt.Printf("correlation=%s msg=checksum invalid:%s\n", requestUUID, err.Error())
 		return
 	}
 
@@ -37,9 +46,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(name) >= 14 {
-		name = name[:14]
-	}
 	err = logScore(name, points, uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

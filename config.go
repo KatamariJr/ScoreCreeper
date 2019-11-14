@@ -27,8 +27,8 @@ func setViperConfig() {
 	//make the HTML webview the default output on a GET request
 	viper.SetDefault("webview", true)
 
-	//filter profane names
-	viper.SetDefault("name_filter", false)
+	//limit long names. set to 0 for unlimited
+	viper.SetDefault("max_name_length", 20)
 
 	//location where csv file with scoer records is stored
 	viper.SetDefault("csv_name", "scores.csv")
