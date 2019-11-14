@@ -31,14 +31,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := validateChecksum(score, name, checksum)
-	if err != nil {
-		http.Error(w, "Nope", http.StatusTeapot)
-		fmt.Printf("correlation=%s msg=checksum invalid:%s\n", requestUUID, err.Error())
-		return
+	switch viper.GetString("security") {
+	case "none", "":
+		//no security
+	case "stupid":
+		//hacky checksum check: do not use this security measure. only here for backwards compatability
+		err := validateDumbChecksum(score, name, checksum)
+		if err != nil {
+			http.Error(w, "Nope", http.StatusTeapot)
+			fmt.Printf("correlation=%s msg=checksum invalid:%s\n", requestUUID, err.Error())
+			return
+		}
+	case "aes":
+		//TODO(agreen) aes security
 	}
 
-	fmt.Printf("Score: %s = Name: %s\n", score, name)
 	points, err := strconv.Atoi(score)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

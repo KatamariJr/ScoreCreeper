@@ -65,6 +65,12 @@ func (u UnrankedResult) Key() int {
 	return u.RowNum
 }
 
+const (
+	aesSecurity    = "aes"
+	stupidSecurity = "stupid"
+	noSecurity     = "none"
+)
+
 func main() {
 	setViperConfig()
 
@@ -109,7 +115,8 @@ func loadScoreTree() error {
 	return nil
 }
 
-func validateChecksum(score, name, checksum string) error {
+//dumb hacky checksum validation. do not use this security measure. only here for backwards compatibility.
+func validateDumbChecksum(score, name, checksum string) error {
 	if len(checksum) != 33 {
 		return errors.New("invalid checksum: wrong length")
 	}
