@@ -71,13 +71,7 @@ func getRouter(w http.ResponseWriter, r *http.Request) {
 
 // show an html view of the scores
 func printScoreTable(w http.ResponseWriter, r *http.Request) {
-	res, err := readScores()
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("msg=error fetching all scores: %v\n", err)
-		return
-	}
-	ranked := rankScores(res)
+	ranked := getAllRankedScoresFromTree()
 	ret := "<table><th>Place</th><th>Name</th><th>Score</th>"
 	for _, score := range ranked {
 		ret += fmt.Sprintf("<tr><td>%v</td><td>%v</td><td>%v</td></tr>", score.Place, html.EscapeString(score.Name), score.Score)

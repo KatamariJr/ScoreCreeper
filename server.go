@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -33,6 +32,7 @@ var (
 const webdomain = "www.mysecurewebsite.com"
 
 type RankedResult struct {
+	uuid  string
 	Place int    `json:"place"`
 	Name  string `json:"name"`
 	Score int    `json:"score"`
@@ -216,26 +216,18 @@ func readScores() ([]UnrankedResult, error) {
 }
 
 func fetchAll(w http.ResponseWriter, r *http.Request) {
-	// res, err := readScores()
-	// if err != nil {
-	// 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	// 	fmt.Printf("msg=error fetching all scores: %v\n", err)
-	// 	return
-	// }
-	// ranked := rankScores(res)
-	fmt.Println("fetching all scores")
-	start := time.Now()
+	//fmt.Println("fetching all scores")
+	ranked := getAllRankedScoresFromTree()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ranked)
+}
+
+func getAllRankedScoresFromTree() []RankedResult {
+	//start := time.Now()
 
 	ranked := []RankedResult{}
-
-	// for i := 1; i < scoreTree.GetCount(); i++ {
-	// 	s := scoreTree.GetByRank(i, false)
-	// 	ranked = append(ranked, RankedResult{
-	// 		Place: i,
-	// 		Name:  s.Value.(string),
-	// 		Score: int(s.Score()),
-	// 	})
-	// }
 
 	i := 1
 	iter := func(it ost.Item) bool {
@@ -244,58 +236,27 @@ func fetchAll(w http.ResponseWriter, r *http.Request) {
 			Place: i,
 			Name:  rr.Name,
 			Score: rr.Score,
+			uuid:  rr.UUID,
 		}
 		ranked = append(ranked, r)
 		i++
 		return true
 	}
 	scoreTree.Descend(UnrankedResult{Score: 999999999}, UnrankedResult{Score: -9999999999}, iter)
-	delta := time.Since(start)
+	//delta := time.Since(start)
 
-	fmt.Printf("duration: %v\n", delta)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ranked)
-}
-
-func rankScores(scores []UnrankedResult) []RankedResult {
-	//sort by score
-	sort.Slice(scores, func(i, j int) bool { return scores[i].Score > scores[j].Score })
-
-	ranked := make([]RankedResult, len(scores))
-	for i, v := range scores {
-		ranked[i] = RankedResult{
-			Name:  v.Name,
-			Place: i,
-			Score: v.Score,
-		}
-	}
-
+	//fmt.Printf("duration: %v\n", delta)
 	return ranked
 }
 
+// get the top scores and a set number of scores surrounding the specified uuid
 func showScores(uuid string) ([]RankedResult, error) {
-	//get all values from csv
-	scores, err := readScores()
-	if err != nil {
-		return nil, err
-	}
-
-	//sort by score
-	sort.Slice(scores, func(i, j int) bool { return scores[i].Score > scores[j].Score })
-
+	ranked := getAllRankedScoresFromTree()
 	var myRank int
-	//add rank amount
-	ranked := make([]RankedResult, len(scores))
-	for i, v := range scores {
-		if uuid == v.UUID {
+	for i, v := range ranked {
+		if uuid == v.uuid {
 			myRank = i
-		}
-		ranked[i] = RankedResult{
-			Name:  v.Name,
-			Place: i,
-			Score: v.Score,
+			break
 		}
 	}
 
@@ -311,5 +272,4 @@ func showScores(uuid string) ([]RankedResult, error) {
 	}
 
 	return returnedResults, nil
-	//return ranked, nil
 }
