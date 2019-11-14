@@ -17,12 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/acme/autocert"
+	"github.com/wangjia184/sortedset"
 )
 
-var scoresLock sync.RWMutex
+var (
+	scoresLock sync.RWMutex
+	scoreSet   *sortedset.SortedSet
+)
 
 const webdomain = "www.mysecurewebsite.com"
 
@@ -46,10 +48,34 @@ func main() {
 	fmt.Println("listening")
 
 	// add your listeners via http.Handle("/path", handlerObject)
-	log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
+	//log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	//log.Fatal(server.ListenAndServeTLS("", ""))
 
-	//log.Fatal(http.ListenAndServe(":4000", router))
+	//begin loading the score set
+	go func() {
+		err := loadSortedSet()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	log.Fatal(http.ListenAndServe(":4000", router))
+}
+
+// read the csv score data into the set
+func loadSortedSet() error {
+	scores, err := readScores()
+	if err != nil {
+		return err
+	}
+
+	scoreSet = sortedset.New()
+	for _, s := range scores {
+		scoreSet.AddOrUpdate(s.UUID, sortedset.SCORE(s.Score), s.Name)
+	}
+
+	fmt.Println("sorted set done")
+	return nil
 }
 
 func validateChecksum(score, name, checksum string) error {
@@ -113,6 +139,7 @@ func logScore(name string, score int, uuid string) error {
 
 func readScores() ([]UnrankedResult, error) {
 	scoresLock.RLock()
+	defer scoresLock.RUnlock()
 	f, err := os.Open("scores.csv")
 	if err != nil {
 		return nil, err
@@ -145,18 +172,28 @@ func readScores() ([]UnrankedResult, error) {
 
 		results = append(results, result)
 	}
-	scoresLock.RUnlock()
 	return results, nil
 }
 
 func fetchAll(w http.ResponseWriter, r *http.Request) {
-	res, err := readScores()
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("msg=error fetching all scores: %v\n", err)
-		return
+	// res, err := readScores()
+	// if err != nil {
+	// 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	// 	fmt.Printf("msg=error fetching all scores: %v\n", err)
+	// 	return
+	// }
+	// ranked := rankScores(res)
+
+	ranked := []RankedResult{}
+
+	for i := 1; i < scoreSet.GetCount(); i++ {
+		s := scoreSet.GetByRank(i, false)
+		ranked = append(ranked, RankedResult{
+			Place: i,
+			Name:  s.Value.(string),
+			Score: int(s.Score()),
+		})
 	}
-	ranked := rankScores(res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(ranked)
