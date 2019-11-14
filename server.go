@@ -117,7 +117,7 @@ func logScore(name string, score int, uuid string) error {
 
 	scoresLock.Lock()
 	defer scoresLock.Unlock()
-	f, err = os.OpenFile("scores.csv", os.O_RDWR|os.O_APPEND, 0660)
+	f, err = os.OpenFile(viper.GetString("csv_name"), os.O_RDWR|os.O_APPEND, 0660)
 	if err != nil {
 		return err
 	}
@@ -146,12 +146,18 @@ func logScore(name string, score int, uuid string) error {
 	return nil
 }
 
+//read the scores from the score csv file and put them in memory
 func readScores() ([]UnrankedResult, error) {
 	scoresLock.RLock()
 	defer scoresLock.RUnlock()
-	f, err := os.Open("scores.csv")
+	f, err := os.Open(viper.GetString("csv_name"))
 	if err != nil {
-		//TODO(agreen) create file if it doesnt exists
+		if err == os.ErrNotExist {
+			f, err = os.Create(viper.GetString("csv_name"))
+			if err != nil {
+				return nil, err
+			}
+		}
 		return nil, err
 	}
 	defer f.Close()
