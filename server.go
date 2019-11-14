@@ -17,16 +17,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FX-HAO/GoOST/ost"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	"github.com/wangjia184/sortedset"
 	"golang.org/x/crypto/acme/autocert"
 )
 
 var (
 	scoresLock sync.RWMutex
-	scoreSet   *sortedset.SortedSet
+	scoreTree  *ost.OST
+	fileLock   sync.RWMutex
 )
 
 const webdomain = "www.mysecurewebsite.com"
@@ -38,9 +39,31 @@ type RankedResult struct {
 }
 
 type UnrankedResult struct {
-	Name  string
-	Score int
-	UUID  string
+	ost.Item
+	RowNum int
+	Name   string
+	Score  int
+	UUID   string
+}
+
+// Less compares u to v
+func (u UnrankedResult) Less(v ost.Item) bool {
+	return u.Score < v.(UnrankedResult).Score
+}
+
+// Greater compares u to v
+func (u UnrankedResult) Greater(v ost.Item) bool {
+	return u.Score > v.(UnrankedResult).Score
+}
+
+// Equal compares u to v
+func (u UnrankedResult) Equal(v ost.Item) bool {
+	return u.Score == v.(UnrankedResult).Score
+}
+
+// Key returns the key
+func (u UnrankedResult) Key() int {
+	return u.RowNum
 }
 
 func main() {
@@ -52,9 +75,9 @@ func main() {
 
 	fmt.Println("listening")
 
-	//begin loading the score set
+	//begin loading the score tree
 	go func() {
-		err := loadSortedSet()
+		err := loadScoreTree()
 		if err != nil {
 			panic(err)
 		}
@@ -69,19 +92,19 @@ func main() {
 	}
 }
 
-// read the csv score data into the set
-func loadSortedSet() error {
+// read the csv score data into the tree
+func loadScoreTree() error {
 	scoresLock.Lock()
 	scores, err := readScores()
+	defer scoresLock.Unlock()
 	if err != nil {
 		panic(err)
 	}
 
-	scoreSet = sortedset.New()
+	scoreTree = ost.New()
 	for _, s := range scores {
-		scoreSet.AddOrUpdate(s.UUID, sortedset.SCORE(s.Score), s.Name)
+		scoreTree.Insert(s)
 	}
-	scoresLock.Unlock()
 
 	fmt.Println("sorted set done")
 	return nil
@@ -148,8 +171,9 @@ func logScore(name string, score int, uuid string) error {
 
 //read the scores from the score csv file and put them in memory
 func readScores() ([]UnrankedResult, error) {
-	scoresLock.RLock()
-	defer scoresLock.RUnlock()
+	fileLock.RLock()
+	defer fileLock.RUnlock()
+	fmt.Println("gonna read")
 	f, err := os.Open(viper.GetString("csv_name"))
 	if err != nil {
 		if err == os.ErrNotExist {
@@ -199,17 +223,37 @@ func fetchAll(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 	// ranked := rankScores(res)
+	fmt.Println("fetching all scores")
+	start := time.Now()
 
 	ranked := []RankedResult{}
 
-	for i := 1; i < scoreSet.GetCount(); i++ {
-		s := scoreSet.GetByRank(i, false)
-		ranked = append(ranked, RankedResult{
+	// for i := 1; i < scoreTree.GetCount(); i++ {
+	// 	s := scoreTree.GetByRank(i, false)
+	// 	ranked = append(ranked, RankedResult{
+	// 		Place: i,
+	// 		Name:  s.Value.(string),
+	// 		Score: int(s.Score()),
+	// 	})
+	// }
+
+	i := 1
+	iter := func(it ost.Item) bool {
+		rr := it.(UnrankedResult)
+		r := RankedResult{
 			Place: i,
-			Name:  s.Value.(string),
-			Score: int(s.Score()),
-		})
+			Name:  rr.Name,
+			Score: rr.Score,
+		}
+		ranked = append(ranked, r)
+		i++
+		return true
 	}
+	scoreTree.Descend(UnrankedResult{Score: 999999999}, UnrankedResult{Score: -9999999999}, iter)
+	delta := time.Since(start)
+
+	fmt.Printf("duration: %v\n", delta)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(ranked)
