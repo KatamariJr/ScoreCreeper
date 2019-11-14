@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/csv"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -213,15 +212,6 @@ func readScores() ([]UnrankedResult, error) {
 		results = append(results, result)
 	}
 	return results, nil
-}
-
-func fetchAll(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("fetching all scores")
-	ranked := getAllRankedScoresFromTree()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ranked)
 }
 
 func getAllRankedScoresFromTree() []RankedResult {

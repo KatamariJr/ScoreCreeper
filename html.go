@@ -80,3 +80,12 @@ func printScoreTable(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(ret))
 }
+
+func fetchAll(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("fetching all scores")
+	ranked := getAllRankedScoresFromTree()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ranked)
+}
