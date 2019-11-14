@@ -16,9 +16,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	requestUUID := uuid.New().String()
 	uuid := uuid.New().String()
 
-	score := r.FormValue("score")
-	name := r.FormValue("name")
-	checksum := r.FormValue("x")
+	var input struct {
+		Score    string `json:"score"`
+		Name     string `json:"name"`
+		Checksum string `json:"checksum"`
+	}
+
+	switch viper.GetString("input_type") {
+	case "json":
+		json.NewDecoder(r.Body).Decode(&input)
+	case "form":
+		input.Score = r.FormValue("score")
+		input.Name = r.FormValue("name")
+		input.Checksum = r.FormValue("x")
+	}
+
+	score := input.Score
+	name := input.Name
+	checksum := input.Checksum
 
 	fmt.Printf("correlation=%s date=%s msg=Incoming score=%s name=%s checksum=%s\n", requestUUID, time.Now().String(), score, name, checksum)
 

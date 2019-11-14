@@ -34,8 +34,13 @@ func setViperConfig() {
 	viper.SetDefault("csv_name", "scores.csv")
 
 	//level of encryption to expect from incoming requests
+	// "aes", "none", ""
 	viper.SetDefault("security", "aes")
 
 	//key to use when using aes encryption
 	//viper.SetDefault("aes_key", "")
+
+	//use either json input or POST form input
+	// "json", "form"
+	viper.SetDefault("input_type", "json")
 }
