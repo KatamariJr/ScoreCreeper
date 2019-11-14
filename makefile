@@ -1,3 +1,4 @@
 run: 
-	go build
+	go build 
+	HTTPS="false" \
 	./leaderboard

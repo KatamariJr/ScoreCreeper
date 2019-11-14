@@ -17,9 +17,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 	"github.com/wangjia184/sortedset"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 var (
@@ -43,15 +45,12 @@ type UnrankedResult struct {
 
 func main() {
 	setViperConfig()
+
 	router := mux.NewRouter() //.StrictSlash(true)
 	router.HandleFunc("/", handler).Methods("POST")
 	router.HandleFunc("/", getRouter).Methods("GET")
 
 	fmt.Println("listening")
-
-	// add your listeners via http.Handle("/path", handlerObject)
-	//log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
-	//log.Fatal(server.ListenAndServeTLS("", ""))
 
 	//begin loading the score set
 	go func() {
@@ -61,22 +60,28 @@ func main() {
 		}
 	}()
 
-	fmt.Println(viper.GetBool("https"))
-
-	log.Fatal(http.ListenAndServe(":4000", router))
+	// add your listeners via http.Handle("/path", handlerObject)
+	if viper.IsSet("https") && viper.GetBool("https") {
+		log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
+		//log.Fatal(server.ListenAndServeTLS("", ""))
+	} else {
+		log.Fatal(http.ListenAndServe(":4000", router))
+	}
 }
 
 // read the csv score data into the set
 func loadSortedSet() error {
+	scoresLock.Lock()
 	scores, err := readScores()
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	scoreSet = sortedset.New()
 	for _, s := range scores {
 		scoreSet.AddOrUpdate(s.UUID, sortedset.SCORE(s.Score), s.Name)
 	}
+	scoresLock.Unlock()
 
 	fmt.Println("sorted set done")
 	return nil
@@ -146,6 +151,7 @@ func readScores() ([]UnrankedResult, error) {
 	defer scoresLock.RUnlock()
 	f, err := os.Open("scores.csv")
 	if err != nil {
+		//TODO(agreen) create file if it doesnt exists
 		return nil, err
 	}
 	defer f.Close()
