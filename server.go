@@ -87,7 +87,7 @@ func main() {
 		log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 		//log.Fatal(server.ListenAndServeTLS("", ""))
 	} else {
-		log.Fatal(http.ListenAndServe(":4000", router))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", viper.GetInt("port")), router))
 	}
 }
 
