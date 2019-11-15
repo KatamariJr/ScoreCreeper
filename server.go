@@ -150,7 +150,6 @@ func readScores() ([]UnrankedResult, error) {
 				return nil, err
 			}
 		}
-		return nil, err
 	}
 	defer f.Close()
 

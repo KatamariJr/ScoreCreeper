@@ -42,7 +42,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if len(name) > maxLength {
 			name = name[:maxLength]
 			fmt.Printf("correlation=%s msg=name truncated\n", requestUUID)
-			return
 		}
 	}
 
