@@ -30,7 +30,7 @@ func setViperConfig() {
 	//limit long names. set to 0 for unlimited
 	viper.SetDefault("max_name_length", 20)
 
-	//location where csv file with scoer records is stored
+	//location where csv file with score records is stored
 	viper.SetDefault("csv_name", "scores.csv")
 
 	//level of encryption to expect from incoming requests
@@ -40,7 +40,16 @@ func setViperConfig() {
 	//key to use when using aes encryption
 	//viper.SetDefault("aes_key", "")
 
+	//value to ensure correct aes key was used on received data
+	viper.SetDefault("aes_checksum", "leaderboard")
+
 	//use either json input or POST form input
 	// "json", "form"
 	viper.SetDefault("input_type", "json")
+
+	//ensure aes key length requirements
+	err := ensureAESKeyLength(viper.GetString("aes_key"))
+	if err != nil {
+		panic(err)
+	}
 }

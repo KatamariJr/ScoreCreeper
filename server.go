@@ -230,7 +230,7 @@ func showScores(uuid string) ([]RankedResult, error) {
 
 	var returnedResults []RankedResult
 
-	//get top 5 and specified uuid and four surorounding scores
+	//get top 5 and specified uuid and four surrounding scores
 	if myRank <= 4 {
 		returnedResults = ranked[:10]
 	} else if myRank >= len(ranked)-2 {

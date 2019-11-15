@@ -54,11 +54,23 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err := validateDumbChecksum(score, name, checksum)
 		if err != nil {
 			http.Error(w, "Nope", http.StatusTeapot)
-			fmt.Printf("correlation=%s msg=checksum invalid:%s\n", requestUUID, err.Error())
+			fmt.Printf("correlation=%s msg=stupid checksum invalid:%s\n", requestUUID, err.Error())
 			return
 		}
 	case "aes":
-		//TODO(agreen) aes security
+		var err error
+		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			fmt.Printf("correlation=%s msg=couldn't decrypt aes:%s\n", requestUUID, err.Error())
+			return
+		}
+
+		if checksum != viper.GetString("aes_checksum") {
+			http.Error(w, "Nope", http.StatusTeapot)
+			fmt.Printf("correlation=%s msg=aes checksum invalid:%s\n", requestUUID, err.Error())
+			return
+		}
 	}
 
 	points, err := strconv.Atoi(score)

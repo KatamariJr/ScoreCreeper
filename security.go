@@ -38,27 +38,36 @@ func validateDumbChecksum(score, name, checksum string) error {
 }
 
 // decrypt the given byte values
-func decryptValues(score, name []byte) (decrScore, decrName string, progErr error) {
+func decryptValues(score, name, checksum []byte) (decrScore, decrName, decrChecksum string, progErr error) {
 	var err error
 	decrScore, err = decryptWithAES(score)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	decrName, err = decryptWithAES(name)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return decrScore, decrName, nil
+	decrChecksum, err = decryptWithAES(checksum)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return decrScore, decrName, decrChecksum, nil
 }
 
 // decrypt the given byte value
-func decryptWithAES(in []byte) (result string, err error) {
+func decryptWithAES(in []byte) (string, error) {
 	key := viper.GetString("aes_key")
+	err := ensureAESKeyLength(key)
+	if err != nil {
+		return "", err
+	}
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		fmt.Printf("Key is of length %d, must be of length 16, 24, or 32", len(key))
+		return "", err
 	}
 	out := make([]byte, len(in))
 
@@ -80,5 +89,16 @@ func ensureBlockSize(arr *[]byte, size int) {
 		newIn := make([]byte, len(*arr)+(size-remainder))
 		copy(newIn, *arr)
 		*arr = newIn
+	}
+}
+
+//make sure an aes key is the appropriate length
+func ensureAESKeyLength(key string) error {
+	lenKey := len(key)
+	switch lenKey {
+	case 16, 24, 32:
+		return nil
+	default:
+		return fmt.Errorf("Key is of length %d, must be of length 16, 24, or 32", len(key))
 	}
 }
