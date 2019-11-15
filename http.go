@@ -12,15 +12,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+type playerValues struct {
+	Score    string `json:"score"`
+	Name     string `json:"name"`
+	Checksum string `json:"checksum"`
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	requestUUID := uuid.New().String()
 	uuid := uuid.New().String()
 
-	var input struct {
-		Score    string `json:"score"`
-		Name     string `json:"name"`
-		Checksum string `json:"checksum"`
-	}
+	var input playerValues
 
 	switch viper.GetString("input_type") {
 	case "json":
