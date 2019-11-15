@@ -58,6 +58,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "aes":
+		//validate using aes encryption
 		var err error
 		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
 		if err != nil {
@@ -71,6 +72,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("correlation=%s msg=aes checksum invalid:%s\n", requestUUID, err.Error())
 			return
 		}
+	default:
+		//invalid security value set
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Printf("correlation=%s msg=invalid value for 'security': %s\n", requestUUID, viper.GetString("security"))
+		return
 	}
 
 	points, err := strconv.Atoi(score)

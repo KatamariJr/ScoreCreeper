@@ -1,6 +1,15 @@
 package main
 
-import "github.com/spf13/viper"
+import (
+	"fmt"
+
+	"github.com/spf13/viper"
+)
+
+var (
+	//possible valid security values
+	securityValues = []string{"aes", "stupid", "none", ""}
+)
 
 // setup some default values for viper
 func setViperConfig() {
@@ -17,6 +26,9 @@ func setViperConfig() {
 	//enable the autocert bot
 	viper.SetDefault("https", false)
 	viper.RegisterAlias("production", "https")
+
+	//domain name to be used for autocert
+	//viper.SetDefault("domain", "www.mysecurewebsite.com)
 
 	//location to store the autocerts cache, if needed
 	viper.SetDefault("autocert_location", ".")
@@ -51,5 +63,18 @@ func setViperConfig() {
 	err := ensureAESKeyLength(viper.GetString("aes_key"))
 	if err != nil {
 		panic(err)
+	}
+
+	//ensure security is a valid value
+	sec := viper.GetString("security")
+	validSec := false
+	for _, v := range securityValues {
+		if v == sec {
+			validSec = true
+			break
+		}
+	}
+	if !validSec {
+		panic(fmt.Sprintf("invalid value for 'security': %s", sec))
 	}
 }

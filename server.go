@@ -24,8 +24,6 @@ var (
 	fileLock   sync.RWMutex
 )
 
-const webdomain = "www.mysecurewebsite.com"
-
 type RankedResult struct {
 	uuid  string
 	Place int    `json:"place"`
@@ -61,12 +59,6 @@ func (u UnrankedResult) Key() int {
 	return u.RowNum
 }
 
-const (
-	aesSecurity    = "aes"
-	stupidSecurity = "stupid"
-	noSecurity     = "none"
-)
-
 func main() {
 	setViperConfig()
 
@@ -85,9 +77,8 @@ func main() {
 	}()
 
 	// add your listeners via http.Handle("/path", handlerObject)
-	if viper.IsSet("https") && viper.GetBool("https") {
-		log.Fatal(http.Serve(autocert.NewListener(webdomain), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
-		//log.Fatal(server.ListenAndServeTLS("", ""))
+	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
+		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	} else {
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", viper.GetInt("port")), router))
 	}
