@@ -1,11 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"crypto/md5"
 	"encoding/csv"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -112,31 +108,6 @@ func loadScoreTree() error {
 	}
 
 	fmt.Println("sorted set done")
-	return nil
-}
-
-//dumb hacky checksum validation. do not use this security measure. only here for backwards compatibility.
-func validateDumbChecksum(score, name, checksum string) error {
-	if len(checksum) != 33 {
-		return errors.New("invalid checksum: wrong length")
-	}
-
-	extraChar := checksum[9]
-	if extraChar != 'a' {
-		return errors.New("invalid checksum: missing char")
-	}
-
-	incomingHash := checksum[:9] + checksum[10:]
-
-	md5 := md5.Sum([]byte(name + score))
-	realHash := hex.EncodeToString(md5[:])
-
-	if !bytes.Equal([]byte(realHash), []byte(incomingHash)) {
-		fmt.Println(incomingHash)
-		fmt.Println(realHash)
-		return errors.New("invalid checksum: no match")
-	}
-
 	return nil
 }
 
