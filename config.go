@@ -59,6 +59,9 @@ func setViperConfig() {
 	// "json", "form"
 	viper.SetDefault("input_type", "json")
 
+	// subroute to serve requests on, if any
+	viper.SetDefault("leaderboard_path", "/")
+
 	//ensure aes key length requirements
 	err := ensureAESKeyLength(viper.GetString("aes_key"))
 	if err != nil {
