@@ -52,7 +52,7 @@ func TestHandler_NoSecurity(t *testing.T) {
 		Score: "123",
 		Name:  "bob",
 	}
-	res, err := buildAndSendRequest(handler, "POST", "/", input)
+	res, err := buildAndSendRequest(scorePostHandler, "POST", "/", input)
 	if err != nil {
 		t.Error(err)
 	}

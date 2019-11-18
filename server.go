@@ -22,6 +22,7 @@ var (
 	scoresLock sync.RWMutex
 	scoreTree  *ost.OST
 	fileLock   sync.RWMutex
+	rowNum     int
 )
 
 type RankedResult struct {
@@ -97,6 +98,8 @@ func loadScoreTree() error {
 		panic(err)
 	}
 
+	rowNum = len(scores)
+
 	scoresLock.Lock()
 	defer scoresLock.Unlock()
 	scoreTree = ost.New()
@@ -145,10 +148,12 @@ func logScore(name string, score int, uuid string) error {
 	scoresLock.Lock()
 	defer scoresLock.Unlock()
 
+	rowNum++
 	unrankedRes := UnrankedResult{
-		Name:  name,
-		Score: score,
-		UUID:  uuid,
+		RowNum: rowNum,
+		Name:   name,
+		Score:  score,
+		UUID:   uuid,
 	}
 	scoreTree.Insert(unrankedRes)
 
@@ -161,7 +166,7 @@ func logScore(name string, score int, uuid string) error {
 	return nil
 }
 
-//read the scores from the score csv file and put them in memory
+//read the scores from the score csv file and return as a slice
 func readScores() ([]UnrankedResult, error) {
 	fileLock.RLock()
 	defer fileLock.RUnlock()
@@ -180,7 +185,7 @@ func readScores() ([]UnrankedResult, error) {
 	r := csv.NewReader(f)
 
 	results := []UnrankedResult{}
-
+	localRowNum := 1
 	for {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -196,12 +201,14 @@ func readScores() ([]UnrankedResult, error) {
 		}
 
 		result := UnrankedResult{
-			UUID:  record[0],
-			Name:  record[1],
-			Score: sc,
+			RowNum: localRowNum,
+			UUID:   record[0],
+			Name:   record[1],
+			Score:  sc,
 		}
 
 		results = append(results, result)
+		localRowNum++
 	}
 	return results, nil
 }
