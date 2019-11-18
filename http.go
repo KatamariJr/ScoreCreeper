@@ -27,7 +27,6 @@ const (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("oh hi")
 	uuid := uuid.New().String()
 
 	var input playerValues

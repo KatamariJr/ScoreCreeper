@@ -90,13 +90,14 @@ func main() {
 // read the csv score data into the tree
 func loadScoreTree() error {
 	fmt.Println("sorted set done")
-	scoresLock.Lock()
+
 	scores, err := readScores()
-	defer scoresLock.Unlock()
 	if err != nil {
 		panic(err)
 	}
 
+	scoresLock.Lock()
+	defer scoresLock.Unlock()
 	scoreTree = ost.New()
 	for _, s := range scores {
 		scoreTree.Insert(s)
@@ -106,7 +107,6 @@ func loadScoreTree() error {
 }
 
 func logScore(name string, score int, uuid string) error {
-
 	var errCh = make(chan error, 1)
 
 	//log the score in the csv
@@ -137,6 +137,7 @@ func logScore(name string, score int, uuid string) error {
 		if err != nil {
 			errCh <- err
 		}
+		close(errCh)
 	}()
 
 	//log the score in the tree
@@ -222,10 +223,11 @@ func getAllRankedScoresFromTree() []RankedResult {
 		i++
 		return true
 	}
-	scoreTree.Descend(UnrankedResult{Score: 999999999}, UnrankedResult{Score: -9999999999}, iter)
-	//delta := time.Since(start)
+	scoresLock.RLock()
+	defer scoresLock.RUnlock()
 
-	//fmt.Printf("duration: %v\n", delta)
+	scoreTree.Descend(UnrankedResult{Score: 999999999}, UnrankedResult{Score: -9999999999}, iter)
+
 	return ranked
 }
 

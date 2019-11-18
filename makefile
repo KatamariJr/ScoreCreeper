@@ -5,4 +5,5 @@ run:
 	SECURITY="none" \
 	AES_KEY="DEADBEEFDEADBEEF" \
 	LOG="true" \
+	INPUT_TYPE="form" \
 	./leaderboard
