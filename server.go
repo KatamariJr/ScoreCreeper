@@ -103,36 +103,55 @@ func loadScoreTree() error {
 }
 
 func logScore(name string, score int, uuid string) error {
-	var f *os.File
-	var err error
 
+	var errCh = make(chan error, 1)
+
+	//log the score in the csv
+	go func() {
+		fileLock.Lock()
+		defer fileLock.Unlock()
+		f, err := os.OpenFile(viper.GetString("csv_name"), os.O_RDWR|os.O_APPEND, 0660)
+		if err != nil {
+			errCh <- err
+		}
+		defer f.Close()
+
+		scoreStr := strconv.Itoa(score)
+		if err != nil {
+			errCh <- err
+		}
+
+		//uuid, name, score, time
+		record := []string{uuid, name, scoreStr, time.Now().String()}
+		w := csv.NewWriter(f)
+		err = w.Write(record)
+		if err != nil {
+			errCh <- err
+		}
+		w.Flush()
+
+		err = w.Error()
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	//log the score in the tree
 	scoresLock.Lock()
 	defer scoresLock.Unlock()
-	f, err = os.OpenFile(viper.GetString("csv_name"), os.O_RDWR|os.O_APPEND, 0660)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 
-	scoreStr := strconv.Itoa(score)
-	if err != nil {
-		return err
+	unrankedRes := UnrankedResult{
+		Name:  name,
+		Score: score,
+		UUID:  uuid,
 	}
+	scoreTree.Insert(unrankedRes)
 
-	//uuid, name, score, time
-	record := []string{uuid, name, scoreStr, time.Now().String()}
-	w := csv.NewWriter(f)
-	err = w.Write(record)
+	//catch up with csv error
+	err := <-errCh
 	if err != nil {
 		return err
 	}
-	w.Flush()
-
-	err = w.Error()
-	if err != nil {
-		return err
-	}
-	fmt.Println("written")
 
 	return nil
 }
