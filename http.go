@@ -26,7 +26,7 @@ const (
 	correlationIDContextKey contextKey = "correlationID"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.New().String()
 
 	var input playerValues

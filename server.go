@@ -63,7 +63,7 @@ func main() {
 	setViperConfig()
 
 	router := mux.NewRouter() //.StrictSlash(true)
-	router.HandleFunc("/", handler).Methods("POST")
+	router.HandleFunc("/", scorePostHandler).Methods("POST")
 	router.HandleFunc("/", getRouter).Methods("GET")
 	if viper.GetBool("log") {
 		router.Use(loggerMiddleware)
