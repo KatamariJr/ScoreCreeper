@@ -28,7 +28,6 @@ const (
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("oh hi")
-	requestUUID := uuid.New().String()
 	uuid := uuid.New().String()
 
 	var input playerValues
@@ -46,13 +45,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	name := input.Name
 	checksum := input.Checksum
 
-	fmt.Printf("correlation=%s date=%s msg=Incoming score=%s name=%s checksum=%s\n", requestUUID, time.Now().String(), score, name, checksum)
+	logMessage(r.Context(), fmt.Sprintf("Incoming score=%s name=%s checksum=%s", score, name, checksum))
 
 	maxLength := viper.GetInt("max_name_length")
 	if maxLength > 0 {
 		if len(name) > maxLength {
 			name = name[:maxLength]
-			fmt.Printf("correlation=%s msg=name truncated\n", requestUUID)
+			logMessage(r.Context(), fmt.Sprintf("name truncated\n"))
 		}
 	}
 
@@ -64,7 +63,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err := validateDumbChecksum(score, name, checksum)
 		if err != nil {
 			http.Error(w, "Nope", http.StatusTeapot)
-			fmt.Printf("correlation=%s msg=stupid checksum invalid:%s\n", requestUUID, err.Error())
+			logMessage(r.Context(), fmt.Sprintf("stupid checksum invalid:%s\n", err.Error()))
 			return
 		}
 	case "aes":
@@ -73,40 +72,40 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			fmt.Printf("correlation=%s msg=couldn't decrypt aes:%s\n", requestUUID, err.Error())
+			logMessage(r.Context(), fmt.Sprintf("couldn't decrypt aes:%s\n", err.Error()))
 			return
 		}
 
 		if checksum != viper.GetString("aes_checksum") {
 			http.Error(w, "Nope", http.StatusTeapot)
-			fmt.Printf("correlation=%s msg=aes checksum invalid:%s\n", requestUUID, err.Error())
+			logMessage(r.Context(), fmt.Sprintf("aes checksum invalid:%s\n", err.Error()))
 			return
 		}
 	default:
 		//invalid security value set
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("correlation=%s msg=invalid value for 'security': %s\n", requestUUID, viper.GetString("security"))
+		logMessage(r.Context(), fmt.Sprintf("invalid value for 'security': %s\n", viper.GetString("security")))
 		return
 	}
 
 	points, err := strconv.Atoi(score)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("correlation=%s msg=error converting to string: %v\n", requestUUID, err)
+		logMessage(r.Context(), fmt.Sprintf("error converting to string: %v\n", err))
 		return
 	}
 
 	err = logScore(name, points, uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("correlation=%s msg=error logging score: %v\n", requestUUID, err)
+		logMessage(r.Context(), fmt.Sprintf("error logging score: %v\n", err))
 		return
 	}
 
 	myResults, err := showScores(uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		fmt.Printf("correlation=%s msg=error gathering scores: %v\n", requestUUID, err)
+		logMessage(r.Context(), fmt.Sprintf("error gathering scores: %v\n", err))
 		return
 	}
 
@@ -122,15 +121,16 @@ func loggerMiddleware(next http.Handler) http.Handler {
 		corrID := uuid.New()
 
 		r = r.WithContext(context.WithValue(r.Context(), correlationIDContextKey, corrID))
-		log.Printf("correlationID=%s msg=Handling Request path=%s method=%s useragent=%s", corrID, r.URL.Path, r.Method, r.UserAgent())
+		logMessage(r.Context(), fmt.Sprintf("Handling Request path=%s method=%s useragent=%s", r.URL.Path, r.Method, r.UserAgent()))
 		next.ServeHTTP(w, r)
-		log.Printf("correlationID=%s msg=Request Complete duration=%d", corrID, time.Since(start))
+		logMessage(r.Context(), fmt.Sprintf("Request Complete duration=%d", time.Since(start)))
 	})
 }
 
+// logMessage will automatically handle the correlation id and message formating.
 func logMessage(ctx context.Context, message string) {
 	corrID := ctx.Value(correlationIDContextKey)
-	log.Printf("correlationID=%s msg=%s", corrID, corrID)
+	log.Printf("correlationID=%s msg=%s", corrID, message)
 }
 
 // route the incoming call to a json view or webview based on query param.
