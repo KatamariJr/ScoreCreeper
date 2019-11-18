@@ -4,4 +4,5 @@ run:
 	WEBVIEW="false" \
 	SECURITY="none" \
 	AES_KEY="DEADBEEFDEADBEEF" \
+	LOG="true" \
 	./leaderboard

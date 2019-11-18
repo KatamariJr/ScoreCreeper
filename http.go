@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,7 +20,14 @@ type playerValues struct {
 	Checksum string `json:"checksum"`
 }
 
+type contextKey string
+
+const (
+	correlationIDContextKey contextKey = "correlationID"
+)
+
 func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("oh hi")
 	requestUUID := uuid.New().String()
 	uuid := uuid.New().String()
 
@@ -104,7 +113,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(myResults)
-	fmt.Println("end of handler")
+}
+
+// loggerMiddleware will log information about teh current request as it comes in and as it finishes.
+func loggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		corrID := uuid.New()
+
+		r = r.WithContext(context.WithValue(r.Context(), correlationIDContextKey, corrID))
+		log.Printf("correlationID=%s msg=Handling Request path=%s method=%s useragent=%s", corrID, r.URL.Path, r.Method, r.UserAgent())
+		next.ServeHTTP(w, r)
+		log.Printf("correlationID=%s msg=Request Complete duration=%d", corrID, time.Since(start))
+	})
+}
+
+func logMessage(ctx context.Context, message string) {
+	corrID := ctx.Value(correlationIDContextKey)
+	log.Printf("correlationID=%s msg=%s", corrID, corrID)
 }
 
 // route the incoming call to a json view or webview based on query param.

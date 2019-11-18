@@ -65,6 +65,9 @@ func main() {
 	router := mux.NewRouter() //.StrictSlash(true)
 	router.HandleFunc("/", handler).Methods("POST")
 	router.HandleFunc("/", getRouter).Methods("GET")
+	if viper.GetBool("log") {
+		router.Use(loggerMiddleware)
+	}
 
 	fmt.Println("listening")
 
@@ -86,6 +89,7 @@ func main() {
 
 // read the csv score data into the tree
 func loadScoreTree() error {
+	fmt.Println("sorted set done")
 	scoresLock.Lock()
 	scores, err := readScores()
 	defer scoresLock.Unlock()
@@ -98,7 +102,6 @@ func loadScoreTree() error {
 		scoreTree.Insert(s)
 	}
 
-	fmt.Println("sorted set done")
 	return nil
 }
 
