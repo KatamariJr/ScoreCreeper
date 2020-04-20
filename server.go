@@ -71,8 +71,6 @@ func main() {
 		router.Use(loggerMiddleware)
 	}
 
-	fmt.Println("listening")
-
 	//begin loading the score tree
 	go func() {
 		err := loadScoreTree()
@@ -80,18 +78,20 @@ func main() {
 			panic(err)
 		}
 	}()
+	port := viper.GetInt("port")
+	log.Printf("listening on port '%d'", port)
 
 	// add your listeners via http.Handle("/path", handlerObject)
 	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
 		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	} else {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", viper.GetInt("port")), router))
+
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 	}
 }
 
 // read the csv score data into the tree
 func loadScoreTree() error {
-	fmt.Println("sorted set done")
 
 	scores, err := readScores()
 	if err != nil {
@@ -106,6 +106,8 @@ func loadScoreTree() error {
 	for _, s := range scores {
 		scoreTree.Insert(s)
 	}
+
+	log.Println("score tree loaded in memory")
 
 	return nil
 }
@@ -170,15 +172,19 @@ func logScore(name string, score int, uuid string) error {
 func readScores() ([]UnrankedResult, error) {
 	fileLock.RLock()
 	defer fileLock.RUnlock()
-	fmt.Println("gonna read")
-	f, err := os.Open(viper.GetString("csv_name"))
+
+	csvFileName := viper.GetString("csv_name")
+	log.Printf("reading scores from file '%s'", csvFileName)
+
+	f, err := os.Open(csvFileName)
 	if err != nil {
 		if err == os.ErrNotExist {
-			f, err = os.Create(viper.GetString("csv_name"))
+			f, err = os.Create(csvFileName)
 			if err != nil {
 				return nil, err
 			}
 		}
+		return nil, err
 	}
 	defer f.Close()
 
@@ -253,6 +259,7 @@ func showScores(uuid string) ([]RankedResult, error) {
 	var returnedResults []RankedResult
 
 	//get top 5 and specified uuid and four surrounding scores
+	//todo allow this number of scores to be configured
 	if myRank <= 4 {
 		returnedResults = ranked[:10]
 	} else if myRank >= len(ranked)-2 {
