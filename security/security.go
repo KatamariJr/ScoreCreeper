@@ -1,4 +1,4 @@
-package main
+package security
 
 import (
 	"bytes"
@@ -12,8 +12,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	//possible valid security values
+	securityValues = []string{"aes", "stupid", "none", ""}
+)
+
 //dumb hacky checksum validation. do not use this security measure. only here for backwards compatibility.
-func validateDumbChecksum(score, name, checksum string) error {
+func ValidateDumbChecksum(score, name, checksum string) error {
 	if len(checksum) != 33 {
 		return errors.New("invalid checksum: wrong length")
 	}
@@ -38,7 +43,7 @@ func validateDumbChecksum(score, name, checksum string) error {
 }
 
 // decrypt the given byte values
-func decryptValues(score, name, checksum []byte) (decrScore, decrName, decrChecksum string, progErr error) {
+func DecryptValues(score, name, checksum []byte) (decrScore, decrName, decrChecksum string, progErr error) {
 	var err error
 	decrScore, err = decryptWithAES(score)
 	if err != nil {
@@ -100,5 +105,27 @@ func ensureAESKeyLength(key string) error {
 		return nil
 	default:
 		return fmt.Errorf("aes key is of length %d, must be of length 16, 24, or 32", len(key))
+	}
+}
+
+func ValidateSecurityType() {
+	//validate stuff
+	//ensure aes key length requirements
+	err := ensureAESKeyLength(viper.GetString("aes_key"))
+	if err != nil {
+		panic(err)
+	}
+
+	//ensure security is a valid value
+	sec := viper.GetString("security")
+	validSec := false
+	for _, v := range securityValues {
+		if v == sec {
+			validSec = true
+			break
+		}
+	}
+	if !validSec {
+		panic(fmt.Sprintf("invalid value '%s' for 'security', must be one of [%v]", sec, securityValues))
 	}
 }

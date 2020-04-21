@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"leaderboard/config"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,7 +16,7 @@ import (
 func TestMain(m *testing.M) {
 	viper.Set("aes_key", "DEADBEEFDEADBEEF")
 	viper.Set("csv_name", fmt.Sprintf(".%ctestdata%ctestscores.csv", os.PathSeparator, os.PathSeparator))
-	setViperDefaults()
+	config.setViperDefaults()
 	loadScoreTree()
 	code := m.Run()
 	os.Exit(code)

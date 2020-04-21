@@ -4,12 +4,17 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"leaderboard/config"
+	"leaderboard/security"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/FX-HAO/GoOST/ost"
 	"github.com/gorilla/handlers"
@@ -274,4 +279,43 @@ func showScores(uuid string) ([]RankedResult, error) {
 	}
 
 	return returnedResults, nil
+}
+
+func setupConfig() {
+	const configName = "leaderboard"
+	var configLocations = []string{
+		".",
+	}
+
+	//set config name and locations
+	viper.SetConfigName(configName)
+	viper.SetConfigType("json")
+	for _, l := range configLocations {
+		viper.AddConfigPath(l)
+	}
+
+	//set environment variable settings
+	viper.SetEnvPrefix("LEADERBOARD")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Printf("Config file changed: %s", e.Name)
+	})
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			//log.Printf("no config file '%s' found, searched the following directories %v", configName, configLocations)
+		} else {
+			log.Fatal(fmt.Errorf("fatal error in config file: %w", err))
+		}
+	}
+
+	//default values
+	config.SetViperDefaults()
+
+	//validate values
+	security.ValidateSecurityType()
+
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"leaderboard/security"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,7 +67,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 		//no security
 	case "stupid":
 		//hacky checksum check: do not use this security measure. only here for backwards compatibility
-		err := validateDumbChecksum(score, name, checksum)
+		err := security.ValidateDumbChecksum(score, name, checksum)
 		if err != nil {
 			http.Error(w, "Nope", http.StatusTeapot)
 			logMessage(r.Context(), fmt.Sprintf("stupid checksum invalid:%s", err.Error()))
@@ -75,7 +76,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	case "aes":
 		//validate using aes encryption
 		var err error
-		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
+		score, name, checksum, err = security.DecryptValues([]byte(score), []byte(name), []byte(checksum))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			logMessage(r.Context(), fmt.Sprintf("couldn't decrypt aes:%s", err.Error()))
