@@ -85,6 +85,7 @@ func main() {
 	log.Printf("listening on port '%d'", port)
 
 	log.Printf("using security format '%s'", viper.GetString("security"))
+	log.Printf("using input type '%s'", viper.GetString("input_type"))
 
 	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
 		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
@@ -126,13 +127,11 @@ func logScore(name string, score int, uuid string) error {
 		f, err := os.OpenFile(viper.GetString("csv_name"), os.O_RDWR|os.O_APPEND, 0660)
 		if err != nil {
 			errCh <- err
+			return
 		}
 		defer f.Close()
 
 		scoreStr := strconv.Itoa(score)
-		if err != nil {
-			errCh <- err
-		}
 
 		//uuid, name, score, time
 		record := []string{uuid, name, scoreStr, time.Now().String()}
@@ -140,12 +139,14 @@ func logScore(name string, score int, uuid string) error {
 		err = w.Write(record)
 		if err != nil {
 			errCh <- err
+			return
 		}
 		w.Flush()
 
 		err = w.Error()
 		if err != nil {
 			errCh <- err
+			return
 		}
 		close(errCh)
 	}()

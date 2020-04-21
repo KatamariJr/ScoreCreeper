@@ -35,7 +35,12 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	inputType := viper.GetString("input_type")
 	switch inputType {
 	case "json":
-		json.NewDecoder(r.Body).Decode(&input)
+		err := json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			logMessage(r.Context(), fmt.Sprintf("couldn't decode request: %s", err.Error()))
+			return
+		}
 	case "form":
 		input.Score = r.FormValue("score")
 		input.Name = r.FormValue("name")
@@ -46,7 +51,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	name := input.Name
 	checksum := input.Checksum
 
-	logMessage(r.Context(), fmt.Sprintf("Incomg score post request input_type=%s score=%s name=%s checksum=%s", inputType, score, name, checksum))
+	logMessage(r.Context(), fmt.Sprintf("Incoming score post request input_type=%s score=%s name=%s checksum=%s", inputType, score, name, checksum))
 
 	maxLength := viper.GetInt("max_name_length")
 	if maxLength > 0 {
@@ -60,7 +65,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	case "none", "":
 		//no security
 	case "stupid":
-		//hacky checksum check: do not use this security measure. only here for backwards compatability
+		//hacky checksum check: do not use this security measure. only here for backwards compatibility
 		err := validateDumbChecksum(score, name, checksum)
 		if err != nil {
 			http.Error(w, "Nope", http.StatusTeapot)
@@ -112,7 +117,12 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(myResults)
+	err = json.NewEncoder(w).Encode(myResults)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		logMessage(r.Context(), fmt.Sprintf("couldn't encode response: %s", err.Error()))
+		return
+	}
 }
 
 // loggerMiddleware will log information about teh current request as it comes in and as it finishes.
@@ -163,7 +173,12 @@ func printScoreTable(w http.ResponseWriter, r *http.Request) {
 	}
 	ret += "</table>"
 
-	w.Write([]byte(ret))
+	_, err := w.Write([]byte(ret))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		logMessage(r.Context(), fmt.Sprintf("couldn't write response: %s", err.Error()))
+		return
+	}
 }
 
 func fetchAll(w http.ResponseWriter, r *http.Request) {
@@ -172,5 +187,10 @@ func fetchAll(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ranked)
+	err := json.NewEncoder(w).Encode(ranked)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		logMessage(r.Context(), fmt.Sprintf("couldn't encode response: %s", err.Error()))
+		return
+	}
 }
