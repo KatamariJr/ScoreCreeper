@@ -69,13 +69,13 @@ func main() {
 	setupConfig()
 
 	router := mux.NewRouter() //.StrictSlash(true)
-	path := viper.GetString("leaderboard_path")
+	path := viper.GetString(config.LeaderboardPath)
 
 	// add your listeners via http.Handle("/path", handlerObject)
 	router.HandleFunc(path, scorePostHandler).Methods("POST")
 	router.HandleFunc(path, getRouter).Methods("GET")
 
-	if viper.GetBool("log") {
+	if viper.GetBool(config.Log) {
 		router.Use(loggerMiddleware)
 	}
 
@@ -86,14 +86,14 @@ func main() {
 			panic(err)
 		}
 	}()
-	port := viper.GetInt("port")
+	port := viper.GetInt(config.Port)
 	log.Printf("listening on port '%d'", port)
 
-	log.Printf("using security format '%s'", viper.GetString("security"))
-	log.Printf("using input type '%s'", viper.GetString("input_type"))
+	log.Printf("using security format '%s'", viper.GetString(config.SecurityType))
+	log.Printf("using input type '%s'", viper.GetString(config.InputType))
 
-	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
-		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
+	if viper.IsSet(config.HTTPS) && viper.GetBool(config.HTTPS) && viper.IsSet(config.Domain) {
+		log.Fatal(http.Serve(autocert.NewListener(viper.GetString(config.Domain)), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	} else {
 
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
@@ -129,7 +129,7 @@ func logScore(name string, score int, uuid string) error {
 	go func() {
 		fileLock.Lock()
 		defer fileLock.Unlock()
-		f, err := os.OpenFile(viper.GetString("csv_name"), os.O_RDWR|os.O_APPEND, 0660)
+		f, err := os.OpenFile(viper.GetString(config.CsvName), os.O_RDWR|os.O_APPEND, 0660)
 		if err != nil {
 			errCh <- err
 			return
@@ -183,7 +183,7 @@ func readScores() ([]UnrankedResult, error) {
 	fileLock.RLock()
 	defer fileLock.RUnlock()
 
-	csvFileName := viper.GetString("csv_name")
+	csvFileName := viper.GetString(config.CsvName)
 	log.Printf("reading scores from file '%s'", csvFileName)
 
 	f, err := os.Open(csvFileName)

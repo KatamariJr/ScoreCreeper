@@ -4,51 +4,41 @@ import (
 	"github.com/spf13/viper"
 )
 
-// setup some default values for viper
+//viper string values for all config settings
+var (
+	Log              = "log"               //output normal traffic logs
+	Port             = "port"              // port to serve leaderboard requests on
+	HTTPS            = "https"             //enable autocert bot
+	Production       = "production"        // alias of HTTPS
+	Domain           = "domain"            // domain to be used for autocert
+	AutocertLocation = "autocert_location" // location to store autocert cache
+	GameName         = "game_name"         // the name of your game, shown in webview
+	WebviewEnabled   = "webview"           // show an html table on get request
+	MaxNameLength    = "max_name_length"   //limit long names. set to 0 for unlimited
+	CsvName          = "csv_name"          //location where csv file with score records is stored
+	SecurityType     = "security"          //level of encryption to expect from incoming requests ["aes", "none", ""]
+	AESKey           = "aes_key"           //key to use when using aes encryption
+	AESChecksum      = "aes_checksum"      //value to ensure correct aes key was used on received data
+	InputType        = "input_type"        //use either json input or POST form input ["json", "form"]
+	LeaderboardPath  = "leaderboard_path"  // subroute to serve requests on, if any
+
+)
+
+// SetViperDefaults will setup some default values for viper
 func SetViperDefaults() {
-
-	//whether to output normal traffic logs
-	viper.SetDefault("log", true)
-
-	//port to run the leaderboard on
-	viper.SetDefault("port", 4000)
-
-	//enable the autocert bot
-	viper.SetDefault("https", false)
-	viper.RegisterAlias("production", "https")
-
-	//domain name to be used for autocert
-	//viper.SetDefault("domain", "www.mysecurewebsite.com)
-
-	//location to store the autocerts cache, if needed
-	viper.SetDefault("autocert_location", ".")
-
-	//name for your game, shown in webview
-	//viper.SetDefault("game_name", "")
-
-	//make the HTML webview the default output on a GET request
-	viper.SetDefault("webview", true)
-
-	//limit long names. set to 0 for unlimited
-	viper.SetDefault("max_name_length", 20)
-
-	//location where csv file with score records is stored
-	viper.SetDefault("csv_name", "scores.csv")
-
-	//level of encryption to expect from incoming requests
-	// "aes", "none", ""
-	viper.SetDefault("security", "aes")
-
-	//key to use when using aes encryption
-	//viper.SetDefault("aes_key", "")
-
-	//value to ensure correct aes key was used on received data
-	viper.SetDefault("aes_checksum", "leaderboard")
-
-	//use either json input or POST form input
-	// "json", "form"
-	viper.SetDefault("input_type", "json")
-
-	// subroute to serve requests on, if any
-	viper.SetDefault("leaderboard_path", "/")
+	viper.SetDefault(Log, true)
+	viper.SetDefault(Port, 4000)
+	viper.SetDefault(HTTPS, false)
+	viper.RegisterAlias(Production, HTTPS)
+	//viper.SetDefault(Domain, "www.mysecurewebsite.com)
+	viper.SetDefault(AutocertLocation, ".")
+	//viper.SetDefault(GameName, "")
+	viper.SetDefault(WebviewEnabled, true)
+	viper.SetDefault(MaxNameLength, 20)
+	viper.SetDefault(CsvName, "scores.csv")
+	viper.SetDefault(SecurityType, "aes")
+	//viper.SetDefault(AESKey, "")
+	viper.SetDefault(AESChecksum, "leaderboard")
+	viper.SetDefault(InputType, "json")
+	viper.SetDefault(LeaderboardPath, "/")
 }

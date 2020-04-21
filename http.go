@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"leaderboard/config"
 	"leaderboard/security"
 	"log"
 	"net/http"
@@ -33,7 +34,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input playerValues
 
-	inputType := viper.GetString("input_type")
+	inputType := viper.GetString(config.InputType)
 	switch inputType {
 	case "json":
 		err := json.NewDecoder(r.Body).Decode(&input)
@@ -54,7 +55,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	logMessage(r.Context(), fmt.Sprintf("Incoming score post request input_type=%s score=%s name=%s checksum=%s", inputType, score, name, checksum))
 
-	maxLength := viper.GetInt("max_name_length")
+	maxLength := viper.GetInt(config.MaxNameLength)
 	if maxLength > 0 {
 		if len(name) > maxLength {
 			name = name[:maxLength]
@@ -137,7 +138,7 @@ func shouldShowWebView(r *http.Request) bool {
 		return val
 	}
 
-	return viper.GetBool("webview")
+	return viper.GetBool(config.WebviewEnabled)
 }
 
 // show an html view of the scores

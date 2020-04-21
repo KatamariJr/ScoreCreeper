@@ -14,9 +14,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	viper.Set("aes_key", "DEADBEEFDEADBEEF")
-	viper.Set("csv_name", fmt.Sprintf(".%ctestdata%ctestscores.csv", os.PathSeparator, os.PathSeparator))
-	config.setViperDefaults()
+	viper.Set(config.AESKey, "DEADBEEFDEADBEEF")
+	viper.Set(config.CsvName, fmt.Sprintf(".%ctestdata%ctestscores.csv", os.PathSeparator, os.PathSeparator))
+	config.SetViperDefaults()
 	loadScoreTree()
 	code := m.Run()
 	os.Exit(code)
@@ -47,8 +47,8 @@ func checkResponse(r *http.Response) error {
 }
 
 func TestHandler_NoSecurity(t *testing.T) {
-	viper.Set("security", "none")
-	viper.Set("input_type", "json")
+	viper.Set(config.SecurityType, "none")
+	viper.Set(config.InputType, "json")
 	input := playerValues{
 		Score: "123",
 		Name:  "bob",

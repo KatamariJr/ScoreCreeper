@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"leaderboard/config"
 
 	"github.com/spf13/viper"
 )
@@ -65,7 +66,7 @@ func decryptValues(score, name, checksum []byte) (decrScore, decrName, decrCheck
 
 // decrypt the given byte value
 func decryptWithAES(in []byte) (string, error) {
-	key := viper.GetString("aes_key")
+	key := viper.GetString(config.AESKey)
 	err := ensureAESKeyLength(key)
 	if err != nil {
 		return "", err
@@ -111,13 +112,13 @@ func ensureAESKeyLength(key string) error {
 func ValidateSecurityType() {
 	//validate stuff
 	//ensure aes key length requirements
-	err := ensureAESKeyLength(viper.GetString("aes_key"))
+	err := ensureAESKeyLength(viper.GetString(config.AESKey))
 	if err != nil {
 		panic(err)
 	}
 
 	//ensure security is a valid value
-	sec := viper.GetString("security")
+	sec := viper.GetString(config.SecurityType)
 	validSec := false
 	for _, v := range securityValues {
 		if v == sec {
@@ -132,7 +133,7 @@ func ValidateSecurityType() {
 
 // ValidateRequestParams will validate that the given request values are acceptable given the current security setting
 func ValidateRequestParams(score string, name string, checksum string) error {
-	securityType := viper.GetString("security")
+	securityType := viper.GetString(config.SecurityType)
 
 	switch securityType {
 	case "none", "":
@@ -150,7 +151,7 @@ func ValidateRequestParams(score string, name string, checksum string) error {
 		if err != nil {
 			return fmt.Errorf("couldn't decrypt aes: %w", err)
 		}
-		if checksum != viper.GetString("aes_checksum") {
+		if checksum != viper.GetString(config.AESChecksum) {
 			return fmt.Errorf("aes checksum '%s' invalid", checksum)
 		}
 	default:
