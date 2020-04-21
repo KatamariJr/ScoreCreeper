@@ -26,12 +26,14 @@ const (
 	correlationIDContextKey contextKey = "correlationID"
 )
 
+// scorePostHandler will accept a request to post a score.
 func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.New().String()
 
 	var input playerValues
 
-	switch viper.GetString("input_type") {
+	inputType := viper.GetString("input_type")
+	switch inputType {
 	case "json":
 		json.NewDecoder(r.Body).Decode(&input)
 	case "form":
@@ -44,13 +46,13 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 	name := input.Name
 	checksum := input.Checksum
 
-	logMessage(r.Context(), fmt.Sprintf("Incoming score=%s name=%s checksum=%s", score, name, checksum))
+	logMessage(r.Context(), fmt.Sprintf("Incomg score post request input_type=%s score=%s name=%s checksum=%s", inputType, score, name, checksum))
 
 	maxLength := viper.GetInt("max_name_length")
 	if maxLength > 0 {
 		if len(name) > maxLength {
 			name = name[:maxLength]
-			logMessage(r.Context(), fmt.Sprintf("name truncated\n"))
+			logMessage(r.Context(), fmt.Sprintf("name truncated"))
 		}
 	}
 
@@ -62,7 +64,7 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 		err := validateDumbChecksum(score, name, checksum)
 		if err != nil {
 			http.Error(w, "Nope", http.StatusTeapot)
-			logMessage(r.Context(), fmt.Sprintf("stupid checksum invalid:%s\n", err.Error()))
+			logMessage(r.Context(), fmt.Sprintf("stupid checksum invalid:%s", err.Error()))
 			return
 		}
 	case "aes":
@@ -71,40 +73,40 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			logMessage(r.Context(), fmt.Sprintf("couldn't decrypt aes:%s\n", err.Error()))
+			logMessage(r.Context(), fmt.Sprintf("couldn't decrypt aes:%s", err.Error()))
 			return
 		}
 
 		if checksum != viper.GetString("aes_checksum") {
 			http.Error(w, "Nope", http.StatusTeapot)
-			logMessage(r.Context(), fmt.Sprintf("aes checksum invalid:%s\n", err.Error()))
+			logMessage(r.Context(), fmt.Sprintf("aes checksum '%s' invalid", checksum))
 			return
 		}
 	default:
 		//invalid security value set
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		logMessage(r.Context(), fmt.Sprintf("invalid value for 'security': %s\n", viper.GetString("security")))
+		logMessage(r.Context(), fmt.Sprintf("invalid value for 'security': %s", viper.GetString("security")))
 		return
 	}
 
 	points, err := strconv.Atoi(score)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		logMessage(r.Context(), fmt.Sprintf("error converting to string: %v\n", err))
+		logMessage(r.Context(), fmt.Sprintf("error converting to string: %v", err))
 		return
 	}
 
 	err = logScore(name, points, uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		logMessage(r.Context(), fmt.Sprintf("error logging score: %v\n", err))
+		logMessage(r.Context(), fmt.Sprintf("error logging score: %v", err))
 		return
 	}
 
 	myResults, err := showScores(uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		logMessage(r.Context(), fmt.Sprintf("error gathering scores: %v\n", err))
+		logMessage(r.Context(), fmt.Sprintf("error gathering scores: %v", err))
 		return
 	}
 
@@ -126,7 +128,7 @@ func loggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// logMessage will automatically handle the correlation id and message formating.
+// logMessage will automatically handle the correlation id and message formatting.
 func logMessage(ctx context.Context, message string) {
 	corrID := ctx.Value(correlationIDContextKey)
 	log.Printf("correlationID=%s msg=%s", corrID, message)
