@@ -18,7 +18,7 @@ var (
 )
 
 //dumb hacky checksum validation. do not use this security measure. only here for backwards compatibility.
-func ValidateDumbChecksum(score, name, checksum string) error {
+func validateDumbChecksum(score, name, checksum string) error {
 	if len(checksum) != 33 {
 		return errors.New("invalid checksum: wrong length")
 	}
@@ -43,7 +43,7 @@ func ValidateDumbChecksum(score, name, checksum string) error {
 }
 
 // decrypt the given byte values
-func DecryptValues(score, name, checksum []byte) (decrScore, decrName, decrChecksum string, progErr error) {
+func decryptValues(score, name, checksum []byte) (decrScore, decrName, decrChecksum string, progErr error) {
 	var err error
 	decrScore, err = decryptWithAES(score)
 	if err != nil {
@@ -128,4 +128,34 @@ func ValidateSecurityType() {
 	if !validSec {
 		panic(fmt.Sprintf("invalid value '%s' for 'security', must be one of [%v]", sec, securityValues))
 	}
+}
+
+// ValidateRequestParams will validate that the given request values are acceptable given the current security setting
+func ValidateRequestParams(score string, name string, checksum string) error {
+	securityType := viper.GetString("security")
+
+	switch securityType {
+	case "none", "":
+		//no security
+	case "stupid":
+		//hacky checksum check: do not use this security measure. only here for backwards compatibility
+		err := validateDumbChecksum(score, name, checksum)
+		if err != nil {
+			return fmt.Errorf("stupid checksum invalid: %w", err)
+		}
+	case "aes":
+		//validate using aes encryption
+		var err error
+		score, name, checksum, err = decryptValues([]byte(score), []byte(name), []byte(checksum))
+		if err != nil {
+			return fmt.Errorf("couldn't decrypt aes: %w", err)
+		}
+		if checksum != viper.GetString("aes_checksum") {
+			return fmt.Errorf("aes checksum '%s' invalid", checksum)
+		}
+	default:
+		//invalid security value set
+		return fmt.Errorf("invalid value for 'security': %s", securityType)
+	}
+	return nil
 }

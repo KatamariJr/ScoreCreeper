@@ -62,36 +62,11 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	switch viper.GetString("security") {
-	case "none", "":
-		//no security
-	case "stupid":
-		//hacky checksum check: do not use this security measure. only here for backwards compatibility
-		err := security.ValidateDumbChecksum(score, name, checksum)
-		if err != nil {
-			http.Error(w, "Nope", http.StatusTeapot)
-			logMessage(r.Context(), fmt.Sprintf("stupid checksum invalid:%s", err.Error()))
-			return
-		}
-	case "aes":
-		//validate using aes encryption
-		var err error
-		score, name, checksum, err = security.DecryptValues([]byte(score), []byte(name), []byte(checksum))
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			logMessage(r.Context(), fmt.Sprintf("couldn't decrypt aes:%s", err.Error()))
-			return
-		}
-
-		if checksum != viper.GetString("aes_checksum") {
-			http.Error(w, "Nope", http.StatusTeapot)
-			logMessage(r.Context(), fmt.Sprintf("aes checksum '%s' invalid", checksum))
-			return
-		}
-	default:
-		//invalid security value set
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		logMessage(r.Context(), fmt.Sprintf("invalid value for 'security': %s", viper.GetString("security")))
+	//validate request via security
+	err := security.ValidateRequestParams(score, name, checksum)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		logMessage(r.Context(), fmt.Sprintf("failed to validate request params: %v", err.Error()))
 		return
 	}
 
