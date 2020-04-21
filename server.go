@@ -61,12 +61,15 @@ func (u UnrankedResult) Key() int {
 }
 
 func main() {
-	setViperConfig()
+	setupConfig()
 
 	router := mux.NewRouter() //.StrictSlash(true)
 	path := viper.GetString("leaderboard_path")
+
+	// add your listeners via http.Handle("/path", handlerObject)
 	router.HandleFunc(path, scorePostHandler).Methods("POST")
 	router.HandleFunc(path, getRouter).Methods("GET")
+
 	if viper.GetBool("log") {
 		router.Use(loggerMiddleware)
 	}
@@ -81,7 +84,6 @@ func main() {
 	port := viper.GetInt("port")
 	log.Printf("listening on port '%d'", port)
 
-	// add your listeners via http.Handle("/path", handlerObject)
 	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
 		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	} else {

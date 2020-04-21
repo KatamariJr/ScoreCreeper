@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/spf13/viper"
 )
@@ -12,10 +16,7 @@ var (
 )
 
 // setup some default values for viper
-func setViperConfig() {
-	viper.SetConfigName("leaderboard")
-	viper.AddConfigPath(".")
-	viper.AutomaticEnv()
+func setViperDefaults() {
 
 	//whether to output normal traffic logs
 	viper.SetDefault("log", true)
@@ -78,6 +79,42 @@ func setViperConfig() {
 		}
 	}
 	if !validSec {
-		panic(fmt.Sprintf("invalid value for 'security': %s", sec))
+		panic(fmt.Sprintf("invalid value '%s' for 'security', must be one of [%v]", sec, securityValues))
 	}
+}
+
+func setupConfig() {
+	const configName = "leaderboard"
+	var configLocations = []string{
+		".",
+	}
+
+	//set config name and locations
+	viper.SetConfigName(configName)
+	viper.SetConfigType("json")
+	for _, l := range configLocations {
+		viper.AddConfigPath(l)
+	}
+
+	//set environment variable settings
+	viper.SetEnvPrefix("LEADERBOARD")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Printf("Config file changed: %s", e.Name)
+	})
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			//log.Printf("no config file '%s' found, searched the following directories %v", configName, configLocations)
+		} else {
+			log.Fatal(fmt.Errorf("fatal error in config file: %w", err))
+		}
+	}
+
+	//default values
+	setViperDefaults()
+
 }

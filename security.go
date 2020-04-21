@@ -99,6 +99,6 @@ func ensureAESKeyLength(key string) error {
 	case 16, 24, 32:
 		return nil
 	default:
-		return fmt.Errorf("Key is of length %d, must be of length 16, 24, or 32", len(key))
+		return fmt.Errorf("aes key is of length %d, must be of length 16, 24, or 32", len(key))
 	}
 }

@@ -15,7 +15,7 @@ import (
 func TestMain(m *testing.M) {
 	viper.Set("aes_key", "DEADBEEFDEADBEEF")
 	viper.Set("csv_name", fmt.Sprintf(".%ctestdata%ctestscores.csv", os.PathSeparator, os.PathSeparator))
-	setViperConfig()
+	setViperDefaults()
 	loadScoreTree()
 	code := m.Run()
 	os.Exit(code)
