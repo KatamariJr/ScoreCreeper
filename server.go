@@ -256,7 +256,7 @@ func getAllRankedScoresFromTree() []RankedResult {
 }
 
 // get the top scores and a set number of scores surrounding the specified uuid
-func showScores(uuid string) ([]RankedResult, error) {
+func showScores(uuid string) (int, []RankedResult, error) {
 	ranked := getAllRankedScoresFromTree()
 	var myRank int
 	for i, v := range ranked {
@@ -266,19 +266,7 @@ func showScores(uuid string) ([]RankedResult, error) {
 		}
 	}
 
-	var returnedResults []RankedResult
-
-	//get top 5 and specified uuid and four surrounding scores
-	//todo allow this number of scores to be configured
-	if myRank <= 4 {
-		returnedResults = ranked[:10]
-	} else if myRank >= len(ranked)-2 {
-		returnedResults = append(ranked[:5], ranked[myRank-2:]...)
-	} else {
-		returnedResults = append(ranked[:5], ranked[myRank-2:myRank+3]...)
-	}
-
-	return returnedResults, nil
+	return myRank + 1, ranked, nil
 }
 
 func setupConfig() {

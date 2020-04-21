@@ -85,16 +85,24 @@ func scorePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	myResults, err := showScores(uuid)
+	myRank, allResults, err := showScores(uuid)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		logMessage(r.Context(), fmt.Sprintf("error gathering scores: %v", err))
 		return
 	}
 
+	var res = struct {
+		AllScores []RankedResult `json:"allScores"`
+		MyRank    int            `json:"rank"`
+	}{
+		allResults,
+		myRank,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(myResults)
+	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		logMessage(r.Context(), fmt.Sprintf("couldn't encode response: %s", err.Error()))
