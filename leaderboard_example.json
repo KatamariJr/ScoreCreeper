@@ -4,5 +4,5 @@
   "security": "none",
   "aes_key": "DEADBEEFDEADBEEF",
   "log": "true",
-  "input_type": "form"
+  "input_type": "json"
 }
