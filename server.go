@@ -84,6 +84,8 @@ func main() {
 	port := viper.GetInt("port")
 	log.Printf("listening on port '%d'", port)
 
+	log.Printf("using security format '%s'", viper.GetString("security"))
+
 	if viper.IsSet("https") && viper.GetBool("https") && viper.IsSet("domain") {
 		log.Fatal(http.Serve(autocert.NewListener(viper.GetString("domain")), handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router)))
 	} else {
