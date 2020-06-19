@@ -62,6 +62,8 @@ If `security` = `aes`, all values in the request must be encrypted using your AE
 POST `/`
 
 #### Request Body
+*Note that the values for the request body are all strings, even the score.*
+
 Unencrypted
 ```
 {
@@ -101,3 +103,9 @@ Encrypted using `aes_key` = `DEADBEEFDEADBEEF`
 }
 ```
 
+#Using with popular game engines
+##Unity
+These examples use the async/await features found in .NET 4.x. To enable these features, update your project settings by 
+going to *Edit -> Project Settings -> Player -> Other Settings -> Api Compatibility Level* and setting it to **.NET 4.x**. 
+###Getting all scores
+Coming soon :)
